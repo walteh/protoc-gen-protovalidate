@@ -1,0 +1,71 @@
+= protoc-gen-protovalidate
+
+[IMPORTANT]
+====
+This project extends the functionality of the `bufbuild/protovalidate-go` repository by integrating validation code generation directly into the Protobuf compilation workflow.
+====
+
+== What is protoc-gen-protovalidate?
+
+`protoc-gen-protovalidate` is a Protobuf compiler plugin that allows you to generate validation code as part of your normal `protoc` workflow. It takes validation constraints defined in your `.proto` files and generates the corresponding validation code that can be used directly in your application.
+
+What makes this tool unique is that it rewrites the imported validation code from `bufbuild/protovalidate-go` to use *your project's package paths*, ensuring seamless integration without dependency conflicts.
+
+== The Problem It Solves
+
+When using the standard `bufbuild/protovalidate-go` library for validating Protocol Buffer messages:
+
+1. The validation code sits outside your project's normal build process
+2. You need to maintain consistent versions between your Protobuf definitions and the validation library
+3. Import path conflicts can arise between the validation code and your application
+4. Dependency management becomes more complex
+
+`protoc-gen-protovalidate` elegantly solves these issues by:
+
+* **Direct Integration**: Generating validation code directly within your protoc compilation pipeline
+* **Path Rewriting**: Automatically adjusting import paths to match your project structure
+* **Synchronized Versioning**: Maintaining version alignment between validation code and your Protobuf schemas
+* **Simplified Dependencies**: Embedding the necessary validation code in your project, reducing external dependencies
+* **Local Control**: Giving you full control over when and how validation code is updated
+
+== How It Works
+
+`protoc-gen-protovalidate` works by:
+
+1. Downloading the validation code from the `bufbuild/protovalidate-go` repository (either from a specific release or using bundled code)
+2. Modifying the import paths to match your project structure
+3. Generating the validation code as part of your protoc compilation
+4. Placing the generated code in your project alongside other generated protobuf code
+
+== Quickstart Configuration
+
+Add the following to your `buf.gen.yaml`:
+
+[source,yaml]
+----
+plugins:
+  - out: gen/proto/golang
+    local: ["go", "tool", "github.com/walteh/protoc-gen-protovalidate/cmd/protoc-gen-protovalidate"]
+    include_imports: true
+    opt:
+      - paths=source_relative
+      - buf_validate_file=path/to/your/validate.proto (only needed if you are not using the default `buf/validate/validate.proto`)
+----
+
+For an example implementation, you can look at https://github.com/walteh/cloudstack-proxy.
+
+=== Configuration Options
+
+* `buf_validate_file`: Path to your validate.proto file (default: "buf/validate/validate.proto")
+* `language`: Target language for validation code (default: "go") 
+* `protovalidate_ref`: Version reference for protovalidate code (default: "_local")
+
+== Supported Languages
+
+Currently, `protoc-gen-protovalidate` fully supports Go, with plans to support:
+
+* Python
+* C++
+* Java
+
+Enjoy simplified, integrated Protobuf validation!
