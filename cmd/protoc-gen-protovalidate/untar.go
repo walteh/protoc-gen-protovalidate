@@ -3,9 +3,7 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
-	"fmt"
 	"io"
-	"os"
 	"strings"
 )
 
@@ -72,7 +70,7 @@ func Untar(r io.Reader) (map[string]string, error) {
 
 			files[filePath] = string(content)
 
-			fmt.Fprintf(os.Stderr, "filePath: %s\n", filePath)
+			// fmt.Fprintf(os.Stderr, "filePath: %s\n", filePath)
 
 		}
 	}
