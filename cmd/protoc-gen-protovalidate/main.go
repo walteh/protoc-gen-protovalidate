@@ -5,24 +5,16 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"os"
+	"net/http"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/bufbuild/protoplugin"
-
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 //go:generate go run ./generator
-
-//go:embed  templates
-var root embed.FS
-
-func AllGoFiles() (embed.FS, error) {
-	return root, nil
-}
 
 func main() {
 	protoplugin.Main(protoplugin.HandlerFunc(handle))
@@ -48,63 +40,87 @@ func handle(
 		return err
 	}
 
+	var desc *descriptorpb.FileOptions
+	var fdesc protoreflect.FileDescriptor
+
 	for _, fileDescriptor := range fileDescriptors {
 
 		if !strings.HasSuffix(fileDescriptor.Path(), params.GetBufValidateFile()) {
 			continue
 		}
 
-		desc, ok := fileDescriptor.Options().(*descriptorpb.FileOptions)
+		descd, ok := fileDescriptor.Options().(*descriptorpb.FileOptions)
 		if !ok {
 			return fmt.Errorf("file descriptor is not a FileDescriptorProto")
 		}
+		fdesc = fileDescriptor
+		desc = descd
+		break
+	}
 
-		gpkg := desc.GetGoPackage()
+	if desc == nil {
+		return nil
+	}
 
-		// fmt.Fprintf(os.Stderr, "fileDescriptor.Path(): %+v\n", fileDescriptor.Path())
-		// fmt.Fprintf(os.Stderr, "fileDescriptor.Name(): %+v\n", fileDescriptor.Name())
-		// fmt.Fprintf(os.Stderr, "fileDescriptor.Package(): %+v\n", fileDescriptor.Package())
-		// fmt.Fprintf(os.Stderr, "fileDescriptor.FullName(): %+v\n", fileDescriptor.FullName())
+	files, err := downloadRemoteFiles(ctx, params.GetLanguage(), params.GetProtoValidateRef())
+	if err != nil {
+		return err
+	}
 
-		rootPath := strings.TrimSuffix(fileDescriptor.Path(), "validate.proto")
-
-		// fmt.Fprintf(os.Stderr, "gpkg: %+v\n", gpkg)
-
-		tmpl := template.New("root")
-
-		tmpl.Delims("[[[[[[[[", "]]]]]]]]")
-
-		tmpl, err = tmpl.ParseFS(root, "templates/*.tmpl")
+	switch params.GetLanguage() {
+	case "go":
+		files, err = GenerateGo(ctx, files, desc, fdesc)
 		if err != nil {
 			return err
 		}
+	// case "python":
+	// 	files, err = GeneratePython(ctx, files, desc)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// case "cc":
+	// 	files, err = GenerateCC(ctx, files, desc)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// case "java":
+	// 	files, err = GenerateJava(ctx, files, desc)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	default:
+		return fmt.Errorf("language not supported: %s", params.GetLanguage())
+	}
 
-		for _, file := range tmpl.Templates() {
-			if file.Name() == "root" {
-				continue
-			}
-
-			fileName := strings.TrimSuffix(file.Name(), ".tmpl")
-
-			// fileName = strings.TrimPrefix(fileName, "gen/protovalidate/")
-
-			fileName = strings.ReplaceAll(fileName, "___", "/")
-
-			fmt.Fprintf(os.Stderr, "file: %+v\n", fileName)
-
-			var buf bytes.Buffer
-			err = file.Execute(&buf, map[string]any{"GoPackageOption": gpkg})
-			if err != nil {
-				return err
-			}
-
-			responseWriter.AddFile(
-				filepath.Join(rootPath, "protovalidate", fileName),
-				buf.String(),
-			)
-		}
-
+	for fileName, fileContent := range files {
+		responseWriter.AddFile(fileName, fileContent)
 	}
 
 	return nil
+}
+
+//go:embed gen/protovalidate-*-latest.tar.gz
+var localFiles embed.FS
+
+func downloadRemoteFiles(ctx context.Context, language string, ref string) (map[string]string, error) {
+
+	if ref == "_local" {
+		localFiles, err := localFiles.ReadFile(filepath.Join("gen", fmt.Sprintf("protovalidate-%s-latest.tar.gz", language)))
+		if err != nil {
+			return nil, err
+		}
+
+		return Untar(bytes.NewReader(localFiles))
+	}
+
+	url := fmt.Sprintf("https://github.com/bufbuild/protovalidate-%s/archive/refs/tags/%s.tar.gz", language, ref)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	return Untar(resp.Body)
 }

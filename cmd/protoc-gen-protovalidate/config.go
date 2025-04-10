@@ -6,19 +6,15 @@ import (
 )
 
 const (
-	DefaultBufValidateFile        = "buf/validate/validate.proto"
-	DefaultProtoValidateGoRef     = "_local"
-	DefaultProtoValidatePythonRef = "_local"
-	DefaultProtoValidateCCRef     = "_local"
-	DefaultProtoValidateJavaRef   = "_local"
+	DefaultBufValidateFile  = "buf/validate/validate.proto"
+	DefaultLanguage         = "go"
+	DefaultProtoValidateRef = "_local"
 )
 
 type Config struct {
-	BufValidateFile        *string `json:"buf_validate_file,omitempty"`
-	ProtoValidateGoRef     *string `json:"protovalidate_go_ref,omitempty"`
-	ProtoValidatePythonRef *string `json:"protovalidate_python_ref,omitempty"`
-	ProtoValidateCCRef     *string `json:"protovalidate_cc_ref,omitempty"`
-	ProtoValidateJavaRef   *string `json:"protovalidate_java_ref,omitempty"`
+	BufValidateFile  *string `json:"buf_validate_file,omitempty"`
+	Language         *string `json:"language,omitempty"`
+	ProtoValidateRef *string `json:"protovalidate_ref,omitempty"`
 }
 
 func parseParams(params string) (*Config, error) {
@@ -55,30 +51,16 @@ func (c *Config) GetBufValidateFile() string {
 	return *c.BufValidateFile
 }
 
-func (c *Config) GetProtoValidateGoRef() string {
-	if c.ProtoValidateGoRef == nil {
-		return DefaultProtoValidateGoRef
+func (c *Config) GetLanguage() string {
+	if c.Language == nil {
+		return DefaultLanguage
 	}
-	return *c.ProtoValidateGoRef
+	return *c.Language
 }
 
-func (c *Config) GetProtoValidatePythonRef() string {
-	if c.ProtoValidatePythonRef == nil {
-		return DefaultProtoValidatePythonRef
+func (c *Config) GetProtoValidateRef() string {
+	if c.ProtoValidateRef == nil {
+		return DefaultProtoValidateRef
 	}
-	return *c.ProtoValidatePythonRef
-}
-
-func (c *Config) GetProtoValidateCCRef() string {
-	if c.ProtoValidateCCRef == nil {
-		return DefaultProtoValidateCCRef
-	}
-	return *c.ProtoValidateCCRef
-}
-
-func (c *Config) GetProtoValidateJavaRef() string {
-	if c.ProtoValidateJavaRef == nil {
-		return DefaultProtoValidateJavaRef
-	}
-	return *c.ProtoValidateJavaRef
+	return *c.ProtoValidateRef
 }
