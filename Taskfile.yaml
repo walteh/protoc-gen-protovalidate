@@ -1,0 +1,34 @@
+version: "3"
+
+vars:
+    GO_MODULES:
+        sh: cat go.work | grep -oEh  '\t+(\./*[^[:space:]]*)' | tr -d '\t'
+    JSONSCHEMA_FILES:
+        sh: find . -type f -name '*.schema.json'
+    GO_ROOT_PKG:
+        sh: cat go.mod | grep -oE '^module[^\S]+' | cut -d' ' -f2
+
+    GO_COMMAND: ./go
+
+env:
+    COMPOSE_BAKE: true
+    GOPROXY: https://proxy.golang.org
+    GOSUMDB: sum.golang.org
+    GOPRIVATE: github.com/walteh
+
+tasks:
+    go-mod-tidy:
+        cmds:
+            - for: {var: GO_MODULES}
+              cmd: cd {{.ITEM}} && go mod tidy -e
+
+    go-mod-upgrade:
+        run: once
+        cmds:
+            - ./go tool go-mod-upgrade --force
+
+    buf:
+        desc: generates protobuf files
+        cmds:
+            - "{{.GO_COMMAND}} tool github.com/bufbuild/buf/cmd/buf generate"
+
