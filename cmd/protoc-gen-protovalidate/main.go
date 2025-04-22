@@ -1,11 +1,11 @@
-package main
+package protocgenprotovalidate
 
 import (
 	"bytes"
 	"context"
-	"embed"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -15,13 +15,11 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-//go:generate go run ./generator
-
-func main() {
-	protoplugin.Main(protoplugin.HandlerFunc(handle))
+type Handler struct {
+	Cache fs.FS
 }
 
-func handle(
+func (h *Handler) Handle(
 	ctx context.Context,
 	e protoplugin.PluginEnv,
 	responseWriter protoplugin.ResponseWriter,
@@ -63,7 +61,7 @@ func handle(
 		return nil
 	}
 
-	jout, tout, err := downloadRemoteFiles(ctx, params.GetLanguage(), params.GetProtoValidateRef())
+	jout, tout, err := downloadRemoteFiles(ctx, h.Cache, params.GetLanguage(), params.GetProtoValidateRef())
 	if err != nil {
 		return err
 	}
@@ -102,21 +100,18 @@ func handle(
 	return nil
 }
 
-//go:embed gen/protovalidate-*-latest*
-var localFiles embed.FS
-
-func downloadRemoteFiles(ctx context.Context, language string, ref string) (map[string]any, map[string]string, error) {
+func downloadRemoteFiles(ctx context.Context, cache fs.FS, language string, ref string) (map[string]any, map[string]string, error) {
 	var jbytes []byte
 	var tbytes []byte
 	var err error
 	if ref == "_local" {
 
-		jbytes, err = localFiles.ReadFile(filepath.Join("gen", fmt.Sprintf("protovalidate-%s-latest.json", language)))
+		jbytes, err = fs.ReadFile(cache, filepath.Join("gen", fmt.Sprintf("protovalidate-%s-latest.json", language)))
 		if err != nil {
 			return nil, nil, err
 		}
 
-		tbytes, err = localFiles.ReadFile(filepath.Join("gen", fmt.Sprintf("protovalidate-%s-latest.tar.gz", language)))
+		tbytes, err = fs.ReadFile(cache, filepath.Join("gen", fmt.Sprintf("protovalidate-%s-latest.tar.gz", language)))
 		if err != nil {
 			return nil, nil, err
 		}

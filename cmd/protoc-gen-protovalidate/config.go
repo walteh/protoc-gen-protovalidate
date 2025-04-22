@@ -1,4 +1,4 @@
-package main
+package protocgenprotovalidate
 
 import (
 	"encoding/json"
