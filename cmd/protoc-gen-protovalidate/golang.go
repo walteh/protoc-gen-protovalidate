@@ -31,6 +31,7 @@ func GenerateGo(ctx context.Context, files map[string]string, opts *descriptorpb
 	var replacements = map[string]string{
 		"github.com/bufbuild/protovalidate-go":                                    opts.GetGoPackage() + "/protovalidate",
 		"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate": opts.GetGoPackage(),
+		"buf/validate/validate.proto":                                             desc.Path(),
 	}
 
 	filed := map[string]string{}

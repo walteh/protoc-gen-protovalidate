@@ -32,6 +32,18 @@
 	"node_id": "RE_kwDOJpY-xs4MmZEQ",
 	"prerelease": false,
 	"published_at": "2025-04-09T21:21:15Z",
+	"reactions": {
+		"+1": 0,
+		"-1": 0,
+		"confused": 0,
+		"eyes": 0,
+		"heart": 0,
+		"hooray": 1,
+		"laugh": 0,
+		"rocket": 0,
+		"total_count": 1,
+		"url": "https://api.github.com/repos/bufbuild/protovalidate-go/releases/211390736/reactions"
+	},
 	"tag_name": "v0.9.3",
 	"tarball_url": "https://api.github.com/repos/bufbuild/protovalidate-go/tarball/v0.9.3",
 	"target_commitish": "main",
